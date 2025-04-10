@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "GameDexCore",
     platforms: [
-        .iOS(.v13)
+        .iOS(.v16)
     ],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
@@ -17,7 +17,8 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/Alamofire/Alamofire.git", from: "5.10.2"),
         .package(url: "https://github.com/realm/realm-swift", from: "10.49.3"),
-        .package(url: "https://github.com/hmlongco/Resolver", from: "1.5.1")
+        .package(url: "https://github.com/hmlongco/Resolver", from: "1.5.1"),
+        .package(url: "https://github.com/onevcat/Kingfisher", from: "8.3.1")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -27,6 +28,7 @@ let package = Package(
             dependencies: [
                 "Alamofire",
                 "Resolver",
+                "Kingfisher",
                 .product(name: "RealmSwift", package: "realm-swift")
             ]
         ),

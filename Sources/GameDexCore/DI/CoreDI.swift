@@ -12,8 +12,15 @@ public extension Resolver {
     static func registerCoreDependencies() {
         register { AlamofireNetworkClient(
             baseURL: APIConfig.baseURL,
-            defaultQueryItems: APIConfig.defaultQueryItems)
+            defaultQueryItems: APIConfig.defaultQueryItems) as NetworkClient
         }.scope(.application)
-        register { RealmDatabase() as LocalDatabase }
+        register {
+            do {
+                return try RealmDatabase() as LocalDatabase
+            } catch {
+                fatalError("RealmDatabase init failed: \(error.localizedDescription)")
+                return nil
+            }
+        }.scope(.application)
     }
 }

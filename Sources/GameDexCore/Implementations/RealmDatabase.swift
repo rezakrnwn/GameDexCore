@@ -12,8 +12,11 @@ import Combine
 public class RealmDatabase: LocalDatabase {
     private let realm: Realm
 
-    public init(configuration: Realm.Configuration = .defaultConfiguration) {
-        self.realm = try! Realm(configuration: configuration)
+    public init(configuration: Realm.Configuration = .defaultConfiguration) throws {
+        guard let realm = try? Realm(configuration: configuration) else {
+            throw DatabaseError.instanceFailure
+        }
+        self.realm = realm
     }
 
     public func save<T: Object>(_ object: T) -> AnyPublisher<Bool, Error> {
@@ -24,7 +27,7 @@ public class RealmDatabase: LocalDatabase {
                 }
                 promise(.success(true))
             } catch {
-                promise(.failure(error))
+                promise(.failure(DatabaseError.requestFailed(error.localizedDescription)))
             }
         }.eraseToAnyPublisher()
     }
@@ -44,9 +47,29 @@ public class RealmDatabase: LocalDatabase {
                 }
                 promise(.success(true))
             } catch {
-                promise(.failure(error))
+                promise(.failure(DatabaseError.requestFailed(error.localizedDescription)))
             }
         }.eraseToAnyPublisher()
+    }
+    
+    public func deleteBy<T: Object>(_ type: T.Type, predicate: NSPredicate) -> AnyPublisher<Bool, Error> {
+        Future<Bool, Error> { promise in
+            do {
+                let objectsToDelete = self.realm.objects(type).filter(predicate)
+                guard !objectsToDelete.isEmpty else {
+                    promise(.success(false))
+                    return
+                }
+
+                try self.realm.write {
+                    self.realm.delete(objectsToDelete)
+                }
+                promise(.success(true))
+            } catch {
+                promise(.failure(DatabaseError.requestFailed(error.localizedDescription)))
+            }
+        }
+        .eraseToAnyPublisher()
     }
     
     public func find<T: Object, KeyType>(type: T.Type, forPrimaryKey key: KeyType) -> AnyPublisher<T?, Error> {
@@ -64,7 +87,7 @@ public class RealmDatabase: LocalDatabase {
                 }
                 promise(.success(true))
             } catch {
-                promise(.failure(error))
+                promise(.failure(DatabaseError.requestFailed(error.localizedDescription)))
             }
         }
         .eraseToAnyPublisher()

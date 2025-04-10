@@ -31,7 +31,7 @@ public final class AlamofireNetworkClient: NetworkClient {
         urlComponents?.queryItems = queryItems
         
         guard let url = urlComponents?.url else {
-           return Fail(error: URLError(.badURL)).eraseToAnyPublisher()
+            return Fail(error: URLError(.badURL)).eraseToAnyPublisher()
        }
 
         let headers = HTTPHeaders(endpoint.headers ?? [:])
@@ -86,8 +86,21 @@ public final class AlamofireNetworkClient: NetworkClient {
         )
         .validate()
         .publishDecodable(type: T.self)
-        .value()
-        .mapError { $0 as Error }
+        .tryMap { response in
+            guard let value = response.value else {
+                throw NetworkError.invalidResponse
+            }
+            return value
+        }
+        .mapError { error in
+            if let decodingError = error as? DecodingError {
+                return NetworkError.decodingError(decodingError)
+            } else if let urlError = error as? URLError {
+                return NetworkError.unreachable(url)
+            } else {
+                return NetworkError.unknown(error)
+            }
+        }
         .eraseToAnyPublisher()
     }
 
